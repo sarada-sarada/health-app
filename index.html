@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#7bc4a0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="健康管理">
+  <title>健康管理</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1 class="header-title" id="page-title">ダッシュボード</h1>
+      <span class="header-date" id="today-date"></span>
+    </header>
+
+    <main class="main">
+      <section id="page-dashboard" class="page active"></section>
+      <section id="page-exercise" class="page"></section>
+      <section id="page-health" class="page"></section>
+      <section id="page-stats" class="page"></section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="dashboard">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">ホーム</span>
+      </button>
+      <button class="nav-btn" data-page="exercise">
+        <span class="nav-icon">🏃</span>
+        <span class="nav-label">運動</span>
+      </button>
+      <button class="nav-btn" data-page="health">
+        <span class="nav-icon">🌿</span>
+        <span class="nav-label">体調</span>
+      </button>
+      <button class="nav-btn" data-page="stats">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">統計</span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/db.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
