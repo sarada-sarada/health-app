@@ -609,3 +609,32 @@ textarea.form-input {
 @media (min-width: 480px) {
   body { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 }
+
+/* ---- Patch (エストラーナテープ) ---- */
+.patch-status {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  background: var(--secondary-light);
+  font-size: 14px;
+}
+
+.patch-status.due     { background: var(--warning-light); }
+.patch-status.overdue { background: #fbd9d9; }
+
+.patch-next-label { font-size: 12px; color: var(--text-muted); }
+.patch-next-date  { font-size: 20px; font-weight: 700; }
+.patch-next-when  { font-size: 13px; font-weight: 600; }
+.patch-status.overdue .patch-next-when { color: #c94a4a; }
+
+.patch-last {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.patch-history { margin-top: 14px; }

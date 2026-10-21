@@ -45,3 +45,23 @@ function deleteHealth(id) {
   const records = getHealthRecords().filter(r => r.id !== id);
   localStorage.setItem(HEALTH_KEY, JSON.stringify(records));
 }
+
+const PATCH_KEY = 'hm_patch';
+
+function getPatchRecords() {
+  return JSON.parse(localStorage.getItem(PATCH_KEY) || '[]');
+}
+
+function addPatchRecord(data) {
+  const records = getPatchRecords();
+  const record = { id: genId(), ...data, createdAt: new Date().toISOString() };
+  records.unshift(record);
+  records.sort((a, b) => b.date.localeCompare(a.date));
+  localStorage.setItem(PATCH_KEY, JSON.stringify(records));
+  return record;
+}
+
+function deletePatchRecord(id) {
+  const records = getPatchRecords().filter(r => r.id !== id);
+  localStorage.setItem(PATCH_KEY, JSON.stringify(records));
+}
