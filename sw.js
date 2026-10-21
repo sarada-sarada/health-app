@@ -1,4 +1,4 @@
-const CACHE = 'health-app-v1';
+const CACHE = 'health-app-v2';
 const ASSETS = [
   './',
   './index.html',

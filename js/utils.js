@@ -71,3 +71,15 @@ function showToast(msg, type = '') {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => toast.classList.remove('show'), 2600);
 }
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return localDateStr(d);
+}
+
+function diffDays(fromStr, toStr) {
+  const from = new Date(fromStr + 'T00:00:00');
+  const to   = new Date(toStr + 'T00:00:00');
+  return Math.round((to - from) / 86400000);
+}

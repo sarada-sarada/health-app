@@ -13,6 +13,9 @@ const EXERCISE_EMOJI = Object.fromEntries(EXERCISE_TYPES.map(t => [t.value, t.em
 
 const SYMPTOMS = ['頭痛', '倦怠感', '腹痛', '発熱', '肩こり', '鼻づまり', '不眠'];
 
+const PATCH_INTERVAL = 2; // エストラーナテープは2日に1回貼り替え
+const PATCH_SITES = ['おなか右', 'おなか左', 'おしり右', 'おしり左'];
+
 // ---- State ----
 let currentPage  = 'dashboard';
 let statsTab     = 'exercise';
@@ -86,6 +89,8 @@ function renderDashboard() {
       </div>
     </div>
 
+    ${patchCardHTML()}
+
     <div class="card">
       <div class="card-title">📈 直近7日間の運動時間（分）</div>
       <div class="chart-container"><canvas id="dash-ex-chart"></canvas></div>
@@ -104,6 +109,8 @@ function renderDashboard() {
       ${recentExerciseHTML(exercises.slice(0, 3))}
     </div>
   `;
+
+  setupPatchCard();
 
   destroyCharts();
   const labels = last7.map(d => formatDateShort(d));
@@ -159,6 +166,89 @@ function recentExerciseHTML(list) {
       <div class="record-date">${formatDate(e.date)}</div>
     </div>
   `).join('');
+}
+
+// ---- Patch (エストラーナテープ) ----
+
+function patchCardHTML() {
+  const records  = getPatchRecords();
+  const last     = records[0];
+  const todayStr = today();
+
+  let status = '<div class="patch-status">まだ記録がありません。貼り替えたら記録しましょう</div>';
+  if (last) {
+    const next = addDays(last.date, PATCH_INTERVAL);
+    const left = diffDays(todayStr, next);
+    const when = left < 0 ? `${-left}日過ぎています` : left === 0 ? '今日です' : left === 1 ? '明日です' : `あと${left}日`;
+    const cls  = left < 0 ? 'overdue' : left === 0 ? 'due' : '';
+    status = `
+      <div class="patch-status ${cls}">
+        <span class="patch-next-label">次の貼り替え</span>
+        <span class="patch-next-date">${formatDate(next)}</span>
+        <span class="patch-next-when">${when}</span>
+      </div>
+      <div class="patch-last">前回：${formatDate(last.date)}${last.site ? `（${last.site}）` : ''}</div>
+    `;
+  }
+
+  // 前回と違う場所を初期選択にする
+  const lastIdx     = last ? PATCH_SITES.indexOf(last.site) : -1;
+  const suggestSite = PATCH_SITES[(lastIdx + 1) % PATCH_SITES.length];
+
+  return `
+    <div class="card">
+      <div class="card-title">💊 エストラーナテープ</div>
+      ${status}
+      <form id="patch-form">
+        <div class="form-group">
+          <label class="form-label">貼った場所<span class="optional">前回と変えましょう</span></label>
+          <div class="symptom-grid" id="patch-sites">
+            ${PATCH_SITES.map(s => `<button type="button" class="symptom-chip ${s === suggestSite ? 'selected' : ''}" data-site="${s}">${s}</button>`).join('')}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">日付</label>
+          <input class="form-input" type="date" name="date" value="${todayStr}" required>
+        </div>
+        <button type="submit" class="btn-primary">貼り替えた ✓</button>
+      </form>
+      ${records.length > 0 ? `<div class="patch-history">${records.slice(0, 3).map(patchRecordHTML).join('')}</div>` : ''}
+    </div>
+  `;
+}
+
+function patchRecordHTML(r) {
+  return `
+    <div class="record-item">
+      <div class="record-icon pink">💊</div>
+      <div class="record-info">
+        <div class="record-title">貼り替え</div>
+        <div class="record-subtitle">${r.site || '場所未記録'}</div>
+      </div>
+      <div class="record-right">
+        <div class="record-date">${formatDate(r.date)}</div>
+        <button class="delete-btn" aria-label="削除" onclick="window._delPatch('${r.id}')">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+function setupPatchCard() {
+  document.querySelectorAll('#patch-sites .symptom-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#patch-sites .symptom-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+    });
+  });
+
+  document.getElementById('patch-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const site = document.querySelector('#patch-sites .symptom-chip.selected')?.dataset.site || '';
+    const date = e.target.date.value;
+    addPatchRecord({ date, site });
+    showToast(`記録しました。次回は${formatDate(addDays(date, PATCH_INTERVAL))}です`, 'success');
+    renderDashboard();
+  });
 }
 
 // ---- Exercise page ----
@@ -389,7 +479,8 @@ function renderHealthList() {
 function renderStats() {
   document.getElementById('page-stats').innerHTML = `
     <div class="tabs">
-      <button class="tab-btn${statsTab === 'exercise' ? ' active' : ''}" onclick="window._statsTab('exercise')">🏃 運動</button>
+      <button class="tab-btn${statsTab === 'exercise' ? ' active' : ''}" onclick="window._delPatch  = id => { if (confirm('この貼り替え記録を削除しますか？')) { deletePatchRecord(id); renderDashboard(); showToast('削除しました'); } };
+window._statsTab('exercise')">🏃 運動</button>
       <button class="tab-btn${statsTab === 'health'   ? ' active' : ''}" onclick="window._statsTab('health')">🌿 体調</button>
     </div>
     <div class="period-selector">
