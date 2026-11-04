@@ -213,7 +213,30 @@ function patchCardHTML() {
         <button type="submit" class="btn-primary">貼り替えた ✓</button>
       </form>
       ${records.length > 0 ? `<div class="patch-history">${records.slice(0, 3).map(patchRecordHTML).join('')}</div>` : ''}
+      ${patchSyncHTML()}
     </div>
+  `;
+}
+
+function patchSyncHTML() {
+  const sync = getPatchSync();
+  const on   = Boolean(sync.url && sync.token);
+  return `
+    <details class="patch-sync">
+      <summary>📅 カレンダー連携：${on ? 'オン' : '未設定'}</summary>
+      <form id="patch-sync-form">
+        <div class="form-group">
+          <label class="form-label">スクリプトのURL</label>
+          <input class="form-input" type="url" name="url" value="${escapeAttr(sync.url || '')}" placeholder="https://script.google.com/macros/s/…/exec">
+        </div>
+        <div class="form-group">
+          <label class="form-label">合言葉</label>
+          <input class="form-input" type="text" name="token" value="${escapeAttr(sync.token || '')}" autocomplete="off" autocapitalize="off">
+        </div>
+        <button type="submit" class="btn-primary">保存する</button>
+      </form>
+      ${on ? '<button type="button" class="btn-secondary" id="patch-sync-now">今の記録でカレンダーを同期</button>' : ''}
+    </details>
   `;
 }
 
@@ -248,7 +271,37 @@ function setupPatchCard() {
     addPatchRecord({ date, site });
     showToast(`記録しました。次回は${formatDate(addDays(date, PATCH_INTERVAL))}です`, 'success');
     renderDashboard();
+    syncPatchCalendar(getPatchRecords()[0].date);
   });
+
+  document.getElementById('patch-sync-form').addEventListener('submit', e => {
+    e.preventDefault();
+    savePatchSync({ url: e.target.url.value.trim(), token: e.target.token.value.trim() });
+    showToast('カレンダー連携を保存しました', 'success');
+    renderDashboard();
+    document.querySelector('.patch-sync').open = true;
+  });
+
+  document.getElementById('patch-sync-now')?.addEventListener('click', () => {
+    const latest = getPatchRecords()[0];
+    if (!latest) { showToast('先に貼り替えを記録してください'); return; }
+    syncPatchCalendar(latest.date);
+  });
+}
+
+// 最新の貼り替え日をGoogleカレンダー（Apps Script）に送り、通知予定を付け直す
+async function syncPatchCalendar(date) {
+  const { url, token } = getPatchSync();
+  if (!url || !token) return;
+  try {
+    // text/plain で送ると事前確認（CORS preflight）なしで Apps Script に届く
+    const res  = await fetch(url, { method: 'POST', body: JSON.stringify({ token, date }) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    showToast(`📅 カレンダーも更新しました（次回 ${formatDate(data.next)}）`, 'success');
+  } catch (err) {
+    showToast(`カレンダーを更新できませんでした：${err.message}`, 'error');
+  }
 }
 
 // ---- Exercise page ----
@@ -479,8 +532,7 @@ function renderHealthList() {
 function renderStats() {
   document.getElementById('page-stats').innerHTML = `
     <div class="tabs">
-      <button class="tab-btn${statsTab === 'exercise' ? ' active' : ''}" onclick="window._delPatch  = id => { if (confirm('この貼り替え記録を削除しますか？')) { deletePatchRecord(id); renderDashboard(); showToast('削除しました'); } };
-window._statsTab('exercise')">🏃 運動</button>
+      <button class="tab-btn${statsTab === 'exercise' ? ' active' : ''}" onclick="window._statsTab('exercise')">🏃 運動</button>
       <button class="tab-btn${statsTab === 'health'   ? ' active' : ''}" onclick="window._statsTab('health')">🌿 体調</button>
     </div>
     <div class="period-selector">
@@ -668,6 +720,14 @@ function emptyState(icon, text) {
 window._navigate  = navigate;
 window._delEx     = id => { if (confirm('この運動記録を削除しますか？')) { deleteExercise(id); renderExList(); showToast('削除しました'); } };
 window._delHealth = id => { if (confirm('この体調記録を削除しますか？')) { deleteHealth(id); renderHealthList(); showToast('削除しました'); } };
+window._delPatch  = id => {
+  if (!confirm('この貼り替え記録を削除しますか？')) return;
+  deletePatchRecord(id);
+  renderDashboard();
+  showToast('削除しました');
+  const latest = getPatchRecords()[0];
+  if (latest) syncPatchCalendar(latest.date);
+};
 window._statsTab  = tab    => { statsTab = tab; renderStats(); };
 window._period    = period => { statsPeriod = period; renderStats(); };
 

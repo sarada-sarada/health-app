@@ -83,3 +83,7 @@ function diffDays(fromStr, toStr) {
   const to   = new Date(toStr + 'T00:00:00');
   return Math.round((to - from) / 86400000);
 }
+
+function escapeAttr(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}

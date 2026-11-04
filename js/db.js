@@ -65,3 +65,13 @@ function deletePatchRecord(id) {
   const records = getPatchRecords().filter(r => r.id !== id);
   localStorage.setItem(PATCH_KEY, JSON.stringify(records));
 }
+
+const PATCH_SYNC_KEY = 'hm_patch_sync';
+
+function getPatchSync() {
+  return JSON.parse(localStorage.getItem(PATCH_SYNC_KEY) || '{}');
+}
+
+function savePatchSync(data) {
+  localStorage.setItem(PATCH_SYNC_KEY, JSON.stringify(data));
+}
